@@ -44,4 +44,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-web/config.js   
+web/config.js
+web/config.sample.js
