@@ -38,6 +38,9 @@ dependencies:
     sdk: flutter
   google_fonts: ^6.2.1
   camera: ^0.11.0
+  google_maps_flutter: ^2.6.0
+  geolocator: ^11.0.0
+  location: ^5.0.3
 
 dev_dependencies:
   flutter_test:

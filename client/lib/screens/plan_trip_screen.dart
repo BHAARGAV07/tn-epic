@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../constants/app_colors.dart';
+import '../constants/map_styles.dart';
+import '../models/destination.dart';
+import 'map_search_screen.dart';
 import 'road_view_screen.dart';
 
 class PlanTripScreen extends StatefulWidget {
@@ -13,6 +19,57 @@ class PlanTripScreen extends StatefulWidget {
 
 class _PlanTripScreenState extends State<PlanTripScreen> {
   int _days = 1;
+  List<Destination> selectedDestinations = [];
+  LatLng? currentLocation;
+  bool _locationDeniedForever = false;
+  GoogleMapController? _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever) {
+        setState(() => _locationDeniedForever = true);
+        return;
+      }
+      if (permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse) {
+        try {
+          final pos = await Geolocator.getCurrentPosition();
+          setState(() => currentLocation = LatLng(pos.latitude, pos.longitude));
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openMapSearch() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MapSearchScreen()),
+    );
+    if (result != null && result is Map) {
+      final name = result['name'] as String? ?? 'Selected Location';
+      final lat = result['lat'] as double?;
+      final lng = result['lng'] as double?;
+      if (lat != null && lng != null) {
+        setState(() {
+          if (selectedDestinations.length < 10) {
+            selectedDestinations.add(
+              Destination(name: name, lat: lat, lng: lng),
+            );
+          }
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,12 +128,21 @@ class _PlanTripScreenState extends State<PlanTripScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  const _DestinationsCard(),
+                  _DestinationsMapCard(
+                    selectedDestinations: selectedDestinations,
+                    currentLocation: currentLocation,
+                    onSearchTap: _openMapSearch,
+                    onRemove: (index) {
+                      setState(() => selectedDestinations.removeAt(index));
+                    },
+                    mapControllerSetter: (c) => _mapController = c,
+                    locationDeniedForever: _locationDeniedForever,
+                  ),
                 ],
               ),
             ),
           ),
-          const _StickyStartArea(),
+          _StickyStartArea(selectedCount: selectedDestinations.length),
         ],
       ),
     );
@@ -199,11 +265,67 @@ class _TripDurationCard extends StatelessWidget {
   }
 }
 
-class _DestinationsCard extends StatelessWidget {
-  const _DestinationsCard();
+class _DestinationsMapCard extends StatefulWidget {
+  const _DestinationsMapCard({
+    required this.selectedDestinations,
+    required this.currentLocation,
+    required this.onSearchTap,
+    required this.onRemove,
+    required this.mapControllerSetter,
+    required this.locationDeniedForever,
+  });
+
+  final List<Destination> selectedDestinations;
+  final LatLng? currentLocation;
+  final VoidCallback onSearchTap;
+  final void Function(int) onRemove;
+  final void Function(GoogleMapController) mapControllerSetter;
+  final bool locationDeniedForever;
+
+  @override
+  State<_DestinationsMapCard> createState() => _DestinationsMapCardState();
+}
+
+class _DestinationsMapCardState extends State<_DestinationsMapCard> {
+  final LatLng _fallback = const LatLng(10.7828, 79.1318);
+
+  Set<Marker> _buildMarkers() {
+    final markers = <Marker>{};
+    for (int i = 0; i < widget.selectedDestinations.length; i++) {
+      final d = widget.selectedDestinations[i];
+      markers.add(
+        Marker(
+          markerId: MarkerId('dest_$i'),
+          position: LatLng(d.lat, d.lng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(45),
+          infoWindow: InfoWindow(title: '${i + 1}. ${d.name}'),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  Set<Polyline> _buildRoutePolyline() {
+    if (widget.currentLocation == null || widget.selectedDestinations.isEmpty) {
+      return {};
+    }
+    final points = <LatLng>[widget.currentLocation!];
+    points.addAll(
+      widget.selectedDestinations.map((d) => LatLng(d.lat, d.lng)).toList(),
+    );
+    return {
+      Polyline(
+        polylineId: const PolylineId('route'),
+        points: points,
+        color: const Color(0xFFFFB800),
+        width: 4,
+      ),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
+    final center = widget.currentLocation ?? _fallback;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -234,23 +356,17 @@ class _DestinationsCard extends StatelessWidget {
                 children: [
                   Text(
                     'Must-Visit Destinations',
-                    softWrap: true,
-                    overflow: TextOverflow.visible,
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.text,
-                      fontFeatures: const [FontFeature.enable('kern')],
                     ),
                   ),
                   Text(
-                    '0/10 selected',
-                    softWrap: true,
-                    overflow: TextOverflow.visible,
+                    '${widget.selectedDestinations.length}/10 selected',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: AppColors.secondary,
-                      fontFeatures: const [FontFeature.enable('kern')],
                     ),
                   ),
                 ],
@@ -258,47 +374,163 @@ class _DestinationsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          TextField(
-            cursorColor: AppColors.gold,
-            style: GoogleFonts.inter(
-              color: AppColors.text,
-              fontFeatures: const [FontFeature.enable('kern')],
-            ),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: AppColors.statCard,
-              hintText: 'Search destinations...',
-              hintStyle: GoogleFonts.inter(
-                color: AppColors.secondary,
-                fontFeatures: const [FontFeature.enable('kern')],
-              ),
-              prefixIcon: const Icon(Icons.search, color: AppColors.secondary),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.fieldBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.gold),
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              height: 220,
+              color: Colors.black,
+              child: (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows)
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.location_off_rounded, color: Colors.grey, size: 40),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Map preview not supported on Windows',
+                            style: GoogleFonts.inter(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : GoogleMap(
+                      initialCameraPosition: CameraPosition(target: center, zoom: 14),
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      mapToolbarEnabled: false,
+                      onMapCreated: (c) {
+                        widget.mapControllerSetter(c);
+                        c.setMapStyle(darkMapStyle);
+                      },
+                      markers: _buildMarkers(),
+                      polylines: _buildRoutePolyline(),
+                    ),
             ),
           ),
-          const SizedBox(height: 24),
-          const Icon(
-            Icons.location_on_outlined,
-            color: AppColors.secondary,
-            size: 40,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Search and add destinations to your trip',
-            textAlign: TextAlign.center,
-            softWrap: true,
-            overflow: TextOverflow.visible,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: AppColors.secondary,
-              fontFeatures: const [FontFeature.enable('kern')],
+          const SizedBox(height: 12),
+
+          if (widget.locationDeniedForever)
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: AppColors.secondary, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Enable location access to see your position',
+                    style: GoogleFonts.inter(
+                      color: AppColors.secondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else if (widget.selectedDestinations.isEmpty)
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: AppColors.secondary, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    "Tap 'Search on Map' to add destinations",
+                    style: GoogleFonts.inter(
+                      color: AppColors.secondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            Column(
+              children: List.generate(widget.selectedDestinations.length, (i) {
+                final d = widget.selectedDestinations[i];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8, top: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.statCard,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.gold,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${i + 1}',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.background,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          d.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.text,
+                          ),
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => widget.onRemove(i),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: AppColors.secondary,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: widget.onSearchTap,
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.statCard,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.gold.withOpacity(0.4),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.map_rounded, color: AppColors.gold, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Search on Map',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.gold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -377,7 +609,9 @@ class _DestinationsCard extends StatelessWidget {
 //   }
 // }
 class _StickyStartArea extends StatelessWidget {
-  const _StickyStartArea();
+  const _StickyStartArea({required this.selectedCount});
+
+  final int selectedCount;
 
   @override
   Widget build(BuildContext context) {
@@ -389,63 +623,72 @@ class _StickyStartArea extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RoadViewScreen(),
-                  ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.gold, AppColors.goldDark],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.gold.withValues(alpha: 0.3),
-                      blurRadius: 20,
+              onTap: selectedCount > 0
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RoadViewScreen(),
+                        ),
+                      );
+                    }
+                  : null,
+              child: Opacity(
+                opacity: selectedCount > 0 ? 1.0 : 0.4,
+                child: Container(
+                  width: double.infinity,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.gold, AppColors.goldDark],
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome,
-                      color: AppColors.background,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'START GAME',
-                      softWrap: true,
-                      overflow: TextOverflow.visible,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                        color: AppColors.background,
-                        fontFeatures: const [FontFeature.enable('kern')],
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withValues(alpha: 0.3),
+                        blurRadius: 20,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: AppColors.background,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'START GAME',
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                          color: AppColors.background,
+                          fontFeatures: const [FontFeature.enable('kern')],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Select at least one destination',
+              selectedCount == 0
+                  ? 'Select at least one destination'
+                  : '$selectedCount destination(s) locked — Ready!',
               textAlign: TextAlign.center,
               softWrap: true,
               overflow: TextOverflow.visible,
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: AppColors.secondary,
+                color: selectedCount == 0
+                    ? AppColors.secondary
+                    : AppColors.gold,
                 fontFeatures: const [FontFeature.enable('kern')],
               ),
             ),
