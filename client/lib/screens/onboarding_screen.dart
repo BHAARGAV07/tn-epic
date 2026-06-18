@@ -216,7 +216,7 @@ class _FeatureCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.gold.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -294,10 +294,10 @@ class _ExplorerNamePage extends StatelessWidget {
               height: 58,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.08),
+                color: AppColors.accent.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.25),
+                  color: AppColors.gold.withOpacity(0.25),
                 ),
               ),
               child: TextField(
@@ -309,11 +309,11 @@ class _ExplorerNamePage extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'e.g. Chola_Warrior_99',
                   hintStyle: GoogleFonts.inter(
-                    color: AppColors.hint.withValues(alpha: 0.5),
+                    color: AppColors.hint.withOpacity(0.5),
                   ),
                   border: InputBorder.none,
                   counterStyle: GoogleFonts.inter(
-                    color: AppColors.hint.withValues(alpha: 0.4),
+                    color: AppColors.hint.withOpacity(0.4),
                   ),
                 ),
               ),
@@ -378,12 +378,12 @@ class _AvatarOption extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isSelected
-                  ? AppColors.accent.withValues(alpha: 0.2)
+                  ? AppColors.accent.withOpacity(0.2)
                   : AppColors.card,
               border: Border.all(
                 color: isSelected
                     ? AppColors.accent
-                    : AppColors.gold.withValues(alpha: 0.2),
+                    : AppColors.gold.withOpacity(0.2),
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -421,7 +421,7 @@ class _DotIndicator extends StatelessWidget {
             decoration: BoxDecoration(
               color: currentPage == index
                   ? AppColors.accent
-                  : AppColors.gold.withValues(alpha: 0.3),
+                  : AppColors.gold.withOpacity(0.3),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -460,7 +460,7 @@ class _GradientCtaButton extends StatelessWidget {
               ? null
               : [
                   BoxShadow(
-                    color: AppColors.accent.withValues(alpha: shadowOpacity),
+                    color: AppColors.accent.withOpacity(shadowOpacity),
                     blurRadius: 20,
                   ),
                 ],

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "coin_1",
+    "name": "Thanjavur Temple Gold",
+    "type": "coin",
+    "latitude": 10.7828,
+    "longitude": 79.1318,
+    "altitude": 1.2,
+    "value": 50
+  },
+  {
+    "id": "coin_2",
+    "name": "Chola Relic Shard",
+    "type": "coin",
+    "latitude": 10.7845,
+    "longitude": 79.1335,
+    "altitude": 1.2,
+    "value": 100
+  },
+  {
+    "id": "coin_3",
+    "name": "Brihadisvara Blessing",
+    "type": "coin",
+    "latitude": 10.7810,
+    "longitude": 79.1295,
+    "altitude": 1.2,
+    "value": 75
+  },
+  {
+    "id": "save_point_1",
+    "name": "Thanjavur Palace Keep",
+    "type": "save_point",
+    "latitude": 10.7865,
+    "longitude": 79.1350,
+    "altitude": 0.0,
+    "value": 0
+  },
+  {
+    "id": "save_point_2",
+    "name": "Maratha Durbar Sanctuary",
+    "type": "save_point",
+    "latitude": 10.7790,
+    "longitude": 79.1270,
+    "altitude": 0.0,
+    "value": 0
+  }
+]

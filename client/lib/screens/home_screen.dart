@@ -203,7 +203,7 @@ class _TopBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.statCard,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+            border: Border.all(color: AppColors.gold.withOpacity(0.3)),
           ),
           child: Row(
             children: [
@@ -517,7 +517,7 @@ class _TripEmptyState extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.gold.withValues(alpha: 0.3),
+                      color: AppColors.gold.withOpacity(0.3),
                       blurRadius: 16,
                     ),
                   ],

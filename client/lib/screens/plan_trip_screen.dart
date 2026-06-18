@@ -22,7 +22,6 @@ class _PlanTripScreenState extends State<PlanTripScreen> {
   List<Destination> selectedDestinations = [];
   LatLng? currentLocation;
   bool _locationDeniedForever = false;
-  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -69,6 +68,22 @@ class _PlanTripScreenState extends State<PlanTripScreen> {
         });
       }
     }
+  }
+
+  void _startGame() {
+    if (selectedDestinations.isEmpty) {
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RoadViewScreen(
+          startLocation: currentLocation ?? const LatLng(10.7828, 79.1318),
+          destinations: selectedDestinations,
+        ),
+      ),
+    );
   }
 
   @override
@@ -135,14 +150,17 @@ class _PlanTripScreenState extends State<PlanTripScreen> {
                     onRemove: (index) {
                       setState(() => selectedDestinations.removeAt(index));
                     },
-                    mapControllerSetter: (c) => _mapController = c,
+                    mapControllerSetter: (c) {},
                     locationDeniedForever: _locationDeniedForever,
                   ),
                 ],
               ),
             ),
           ),
-          _StickyStartArea(selectedCount: selectedDestinations.length),
+          _StickyStartArea(
+            selectedCount: selectedDestinations.length,
+            onStart: selectedDestinations.isEmpty ? null : _startGame,
+          ),
         ],
       ),
     );
@@ -223,7 +241,7 @@ class _TripDurationCard extends StatelessWidget {
               activeTrackColor: AppColors.gold,
               inactiveTrackColor: AppColors.statCard,
               thumbColor: AppColors.gold,
-              overlayColor: AppColors.gold.withValues(alpha: 0.2),
+              overlayColor: AppColors.gold.withOpacity(0.2),
               trackHeight: 4,
             ),
             child: Slider(
@@ -561,7 +579,7 @@ class _DestinationsMapCardState extends State<_DestinationsMapCard> {
 //                 borderRadius: BorderRadius.circular(28),
 //                 boxShadow: [
 //                   BoxShadow(
-//                     color: AppColors.gold.withValues(alpha: 0.3),
+//                     color: AppColors.gold.withOpacity(0.3),
 //                     blurRadius: 20,
 //                   ),
 //                 ],
@@ -609,9 +627,13 @@ class _DestinationsMapCardState extends State<_DestinationsMapCard> {
 //   }
 // }
 class _StickyStartArea extends StatelessWidget {
-  const _StickyStartArea({required this.selectedCount});
+  const _StickyStartArea({
+    required this.selectedCount,
+    this.onStart,
+  });
 
   final int selectedCount;
+  final VoidCallback? onStart;
 
   @override
   Widget build(BuildContext context) {
@@ -623,16 +645,7 @@ class _StickyStartArea extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             GestureDetector(
-              onTap: selectedCount > 0
-                  ? () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RoadViewScreen(),
-                        ),
-                      );
-                    }
-                  : null,
+              onTap: onStart,
               child: Opacity(
                 opacity: selectedCount > 0 ? 1.0 : 0.4,
                 child: Container(
@@ -645,7 +658,7 @@ class _StickyStartArea extends StatelessWidget {
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.gold.withValues(alpha: 0.3),
+                        color: AppColors.gold.withOpacity(0.3),
                         blurRadius: 20,
                       ),
                     ],

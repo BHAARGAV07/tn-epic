@@ -113,7 +113,7 @@ class _LoginCard extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(
           top: BorderSide(
-            color: AppColors.gold.withValues(alpha: 0.3),
+            color: AppColors.gold.withOpacity(0.3),
             width: 1.5,
           ),
         ),
@@ -218,7 +218,7 @@ class _QuestTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.25)),
+      borderSide: BorderSide(color: AppColors.gold.withOpacity(0.25)),
     );
 
     return TextField(
@@ -231,12 +231,12 @@ class _QuestTextField extends StatelessWidget {
         hintText: hint,
         labelStyle: GoogleFonts.inter(color: AppColors.hint),
         hintStyle: GoogleFonts.inter(
-          color: AppColors.hint.withValues(alpha: 0.65),
+          color: AppColors.hint.withOpacity(0.65),
         ),
         prefixIcon: Icon(prefixIcon, color: AppColors.accent),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: AppColors.accent.withValues(alpha: 0.08),
+        fillColor: AppColors.accent.withOpacity(0.08),
         border: border,
         enabledBorder: border,
         focusedBorder: OutlineInputBorder(
@@ -266,7 +266,7 @@ class _GradientButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.accent.withValues(alpha: 0.4),
+              color: AppColors.accent.withOpacity(0.4),
               blurRadius: 20,
             ),
           ],
@@ -323,7 +323,7 @@ class _OrDivider extends StatelessWidget {
 class _DividerLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(height: 1, color: AppColors.gold.withValues(alpha: 0.2));
+    return Container(height: 1, color: AppColors.gold.withOpacity(0.2));
   }
 }
 
@@ -346,8 +346,8 @@ class _SocialButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white.withValues(alpha: 0.06),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+          backgroundColor: Colors.white.withOpacity(0.06),
+          side: BorderSide(color: Colors.white.withOpacity(0.15)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
